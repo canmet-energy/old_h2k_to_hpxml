@@ -1,1 +1,98 @@
+import json
+
+import jsonfile
+
+
+class BuildHPXML:
+    def __init__(self, path_to_hpxml_template: str) -> None:
+        self.hpxml_template = self._read_json(path_to_hpxml_template)
+
+
+
+    def _read_json(self, path: str) -> dict:
+        with open(path, 'r') as json_file:
+            json_dict = json.loads(json_file.read())
+        return json_dict
+
+    def save_json(self, path: str, json_file) -> None:
+        newFile = open('newSample.json', 'w')
+        newFile.write(json.dumps(json_file))
+        print(json.dumps(json_file))
+
+    def modify_ach_rate(self, ach_rate,leakage_value=3,leakage_unit=0,leakage_house_pressure=50):
+        self.hpxml_template['steps'][0]['arguments']= ach_rate
+        self.hpxml_template['air_leakage_value']= leakage_value
+        self.hpxml_template['air_leakage_units']= leakage_unit
+        self.hpxml_template['air_leakage_house_pressure']=leakage_house_pressure
+
+    def modify_r_value(self,R_value,ceiling_assembly,door_rvalue,return_insulation=0, supply_insulation=4.0,foundation_assembly=0,garage_assembly=0,wall_insulation=8.9,rim_joit_rvalue=23.0,roof_rvalue=2.3,wall_rvalue=23):
+        self.hpxml_template['steps'][0]['arguments']= R_value
+        self.hpxml_template['ceiling_assembly_r'] = ceiling_assembly
+        self.hpxml_template['door_rvalue'] = door_rvalue
+        self.hpxml_template['ducts_return_insulation_r'] = return_insulation
+        self.hpxml_template['ducts_supply_insulation_r'] = supply_insulation
+        self.hpxml_template['floor_over_foundation_assembly_r'] = foundation_assembly
+        self.hpxml_template['floor_over_garage_assembly_r'] = garage_assembly
+        self.hpxml_template['foundation_wall_insulation_r'] = wall_insulation
+        self.hpxml_template['rim_joist_assembly_r'] = rim_joit_rvalue
+        self.hpxml_template['roof_assembly_r'] = roof_rvalue
+        self.hpxml_template['wall_assembly_r'] = wall_rvalue
+
+
+    def modify_cooling(self,cooling_system, single_stage, SEER, central_air_conditioner,cooling_capacity=24000,cooling_efficiency=13.0):
+        self.hpxml_template['steps'][0]['arguments']= cooling_system
+        self.hpxml_template['cooling_system_cooling_capacity'] = cooling_capacity
+        self.hpxml_template['cooling_system_cooling_compressor_type'] = single_stage
+        self.hpxml_template['cooling_system_cooling_efficiency'] = cooling_efficiency
+        self.hpxml_template['cooling_system_cooling_efficiency_type'] = SEER
+        self.hpxml_template['cooling_system_type'] = central_air_conditioner
+
+    def modify_ducts(self, duct_system, CFM25, leakage_return=25.0, duct_surface_area=0, leakage_supply=75.0, supply_surface_area=0,
+                     attic_unvented=0):
+        self.hpxml_template['steps'][0]['arguments'] = duct_system
+        self.hpxml_template['ducts_leakage_units'] = CFM25
+        self.hpxml_template['ducts_return_leakage_to_outside_value'] = leakage_return
+        self.hpxml_template['ducts_return_location'] = attic_unvented
+        self.hpxml_template['ducts_return_surface_area'] = duct_surface_area
+        self.hpxml_template['ducts_supply_leakage_to_outside_value'] = leakage_supply
+        self.hpxml_template['ducts_supply_location'] = attic_unvented
+        self.hpxml_template['ducts_supply_surface_area'] = supply_surface_area
+
+    def modify_geometry(self,Geometry,UnventedAttic,ConditionedBasement,gable,single_family_detached,false,average_ceiling_height=8.0,
+                        rim_height=9.25,garage_width=0,foundation_height=8.0,eaves_depth=0,height_above_grade=1.0,roof_pitch=6.12,unit_ratio=1.5,unit_cfa=2700.0, num_bedrooms=3,num_floors=1,unit_orientation=180.0):
+        self.hpxml_template['steps'][0]['arguments'] = Geometry
+        self.hpxml_template['geometry_attic_type'] = UnventedAttic
+        self.hpxml_template['geometry_average_ceiling_height'] = average_ceiling_height
+        self.hpxml_template['geometry_eaves_depth'] = eaves_depth
+        self.hpxml_template['geometry_foundation_height'] = foundation_height
+        self.hpxml_template['geometry_foundation_height_above_grade'] = height_above_grade
+        self.hpxml_template['geometry_foundation_type'] = ConditionedBasement
+        self.hpxml_template['geometry_garage_width'] = garage_width
+        self.hpxml_template['geometry_rim_joist_height'] = rim_height
+        self.hpxml_template['geometry_roof_pitch'] = roof_pitch
+        self.hpxml_template['geometry_roof_type'] = gable
+        self.hpxml_template['geometry_unit_aspect_ratio'] = unit_ratio
+        self.hpxml_template['geometry_unit_cfa'] = unit_cfa
+        self.hpxml_template['geometry_unit_num_bedrooms'] = num_bedrooms
+        self.hpxml_template['geometry_unit_num_floors_above_grade'] = num_floors
+        self.hpxml_template['geometry_unit_orientation'] = unit_orientation
+        self.hpxml_template['geometry_unit_type'] = single_family_detached
+        self.hpxml_template['geometry_unit_left_wall_is_adiabatic'] = false
+        self.hpxml_template['geometry_unit_right_wall_is_adiabatic'] = false
+        self.hpxml_template['geometry_unit_back_wall_is_adiabatic'] = false
+
+    def modify_heating(self,heating_system,natural_gas, furnace,heating_capacity=36000.0,heating_efficiency=0.92):
+        self.hpxml_template['steps'][0]['arguments'] = heating_system
+        self.hpxml_template['heating_system_fuel'] =  natural_gas
+        self.hpxml_template['heating_system_heating_capacity'] = heating_capacity
+        self.hpxml_template['heating_system_heating_efficiency'] =heating_efficiency
+        self.hpxml_template['heating_system_type'] = furnace
+
+
+
+
+
+new = str("C:\\users\\anahmed\\Desktop\\OpenStudio-HPXML\\workflow\\template-build-and-run-hpxml-with-stochastic-occupancy.osw")
+test = BuildHPXML(new)
+print(test.hpxml_template)
 
