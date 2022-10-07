@@ -1,3 +1,6 @@
+from collections import defaultdict
+from decimal import Decimal
+import sys
 from time import sleep
 import xmlschema
 
@@ -518,3 +521,78 @@ class ParseH2K:
                         dwhr_spec.append(dwhr_def)
 
         return dhw_spec, dwhr_spec
+
+    def get_coolingsystem_spec(self):
+        systems = self.h2k_dict['House']['HeatingCooling']
+        cooling_spec = []
+        if 'AirConditioning' in systems['Type2']:
+            cooling_spec.append({'type': systems['Type2']['AirConditioning']['Equipment']['CentralType']['English'],
+                                 'code': systems['Type2']['AirConditioning']['Equipment']['CentralType']['@code'],
+                                 'capacity': systems['Type2']['AirConditioning']['Specifications']['RatedCapacity']['@value'],
+                                 # All values in H2K are in SI units even if it is shown as 'Btu/hr'
+                                 'capacity_unit': 'kW',
+                                 'efficiency': systems['Type2']['AirConditioning']['Specifications']['Efficiency']['@value'],
+                                 'isCop': systems['Type2']['AirConditioning']['Specifications']['Efficiency']['@isCop']}
+                                )
+        elif 'AirHeatPump' in systems['Type2'] and systems['Type2']['AirHeatPump']['Equipment']['Function']['@code'] == '2':
+            cooling_spec.append({'type': systems['Type2']['AirHeatPump']['Equipment']['Type']['English'],
+                                 'code': systems['Type2']['AirHeatPump']['Equipment']['Type']['@code'],
+                                 'capacity': systems['Type2']['AirHeatPump']['Specifications']['OutputCapacity']['@value'],
+                                 # All values in H2K are in SI units even if it is shown as 'Btu/hr'
+                                 'capacity_unit': 'kW',
+                                 'efficiency': systems['Type2']['AirHeatPump']['Specifications']['CoolingEfficiency']['@value'],
+                                 'isCop': systems['Type2']['AirHeatPump']['Specifications']['CoolingEfficiency']['@isCop']}
+                                )
+        return cooling_spec
+
+    def get_heating_system_spec(self):
+        systems = self.h2k_dict['House']['HeatingCooling']
+        system_type1 = self.get_heating_system_type1(systems['Type1'])
+        system_type2 = self.get_heating_system_type2(systems['Type2'])
+        # Identigy the primary and backup heating systems
+        primary_heating_system = None
+        backup_heating_system = None
+        for sys_type, sys_spec in system_type2.items():
+            if len(sys_spec) > 0:
+                primary_heating_system = (sys_type, sys_spec)
+
+        for sys_type, sys_spec in system_type1.items():
+            if len(sys_spec) > 0:
+                if not primary_heating_system:
+                    primary_heating_system = (sys_type, sys_spec)
+                else:
+                    backup_heating_system = (sys_type, sys_spec)
+
+        return primary_heating_system, backup_heating_system
+
+    def get_heating_system_type1(self, systems):
+        system_types = ['Baseboards', 'Furnace', 'Boiler']
+        heating_system_type1 = defaultdict()
+        heating_system_type1.update((k, defaultdict()) for k in system_types)
+
+        for system_type in system_types:
+            if system_type in systems:
+                heating_system_type1[system_type]['efficiency'] = systems[
+                    system_type]['Specifications']['@efficiency'] / Decimal(100)
+                heating_system_type1[system_type]['capacity'] = systems[system_type]['Specifications']['OutputCapacity']['@value']
+                heating_system_type1[system_type]['fuel'] = systems[system_type]['Equipment'][
+                    'EnergySource']['English'] if system_type != 'Baseboards' else 'Electric'
+                heating_system_type1[system_type]['equipment'] = systems[system_type]['Equipment'][
+                    'EquipmentType']['English'] if system_type != 'Baseboards' else 'Baseboard'
+
+        return heating_system_type1
+
+    def get_heating_system_type2(self, systems):
+        system_types = ['AirHeatPump', 'WaterHeatPump', 'GroundHeatPump']
+        heating_system_type2 = defaultdict()
+        heating_system_type2.update((k, defaultdict()) for k in system_types)
+
+        for system_type in system_types:
+            if system_type in systems:
+                heating_system_type2[system_type]['efficiency'] = systems[
+                    system_type]['Specifications']['HeatingEfficiency']['@value']
+                heating_system_type2[system_type]['capacity'] = systems[system_type]['Specifications']['OutputCapacity']['@value']
+                heating_system_type2[system_type]['fuel'] = 'Electric'
+                heating_system_type2[system_type]['equipment'] = systems[system_type]['Equipment']['Type']['English']
+
+        return heating_system_type2
