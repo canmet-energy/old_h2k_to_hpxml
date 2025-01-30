@@ -1,3 +1,7 @@
+# Note that this repository has been superceded by the h2k_hpxml project (link below) and exists only for reference purposes
+
+Refer to the [h2k_hpxml](https://github.com/canmet-energy/h2k_hpxml) project.
+
 # HOT2000 hourly model constructor using HPXML
 
 This initiative aims to develop a workflow to generate hourly energy modeling results for H2K archetypes. EnergyPlus is selected as the hourly energy modeling software for this project. The proposed workflow involves scripts to parse H2K models, transform model parameters to e+ input format, generate e+ models, execute the hourly simulation, and return the hourly results. 
